@@ -2,8 +2,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef GUI_H
-#define GUI_H
+#ifndef ProcGUI_H
+#define ProcGUI_H
 
 #include <QMainWindow>
 #include <QWebView>
@@ -13,7 +13,7 @@
 
 #include <QModelIndex>
 
-#include "bridge.h"
+#include "procbridge.h"
 #include "rpcconsole.h"
 
 #include <stdint.h>
@@ -23,6 +23,8 @@ class ClientModel;
 class WalletModel;
 class MessageModel;
 class Notificator;
+class MultisigDialog;
+class ProcReleaseChecker;
 
 QT_BEGIN_NAMESPACE
 class QLabel;
@@ -35,12 +37,12 @@ QT_END_NAMESPACE
   ProCurrency GUI main class. This class represents the main window of the ProCurrency UI. It communicates with both the client and
   wallet models to give the user an up-to-date view of the current core state.
 */
-class GUI : public QMainWindow
+class ProcGUI : public QMainWindow
 {
     Q_OBJECT
 public:
-    explicit GUI(QWidget *parent = 0);
-    ~GUI();
+    explicit ProcGUI(QWidget *parent = 0);
+    ~ProcGUI();
 
     /** Set the client model.
         The client model represents the part of the core that communicates with the P2P network, and is wallet-agnostic.
@@ -68,17 +70,19 @@ private:
     QWebView *webView;
     QWebFrame *documentFrame;
 
-    UIBridge *bridge;
+    UIProcBridge *procbridge;
 
     ClientModel *clientModel;
     WalletModel *walletModel;
     MessageModel *messageModel;
 
     QMenuBar *appMenuBar;
+	MultisigDialog *multisigPage;
 
     QAction *quitAction;
     QAction *aboutAction;
     QAction *optionsAction;
+	QAction *options2Action;
     QAction *toggleHideAction;
     QAction *exportAction;
     QAction *encryptWalletAction;
@@ -89,10 +93,12 @@ private:
     QAction *aboutQtAction;
     QAction *openRPCConsoleAction;
 	QAction *showBackupsAction;
+	QAction *multisigAction;
 
     QSystemTrayIcon *trayIcon;
     Notificator *notificator;
     RPCConsole *rpcConsole;
+	ProcReleaseChecker *procReleaseChecker;
 
     uint64_t nWeight;
 
@@ -104,7 +110,7 @@ private:
     /** Create system tray (notification) icon */
     void createTrayIcon();
 
-    friend class UIBridge;
+    friend class UIProcBridge;
 
 private slots:
     /** Page finished loading */
@@ -136,6 +142,8 @@ private slots:
     */
     void askFee(qint64 nFeeRequired, bool *payFee);
     void handleURI(QString strURI);
+	
+	void gotoMultisigPage();
 
 #ifndef Q_OS_MAC
     /** Handle tray icon clicked */
@@ -155,6 +163,8 @@ private slots:
 
     /** Show configuration dialog */
     void optionsClicked();
+	/** Show options dialog */
+    void options2Clicked();
     /** Show about dialog */
     void aboutClicked();
 

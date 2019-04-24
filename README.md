@@ -1,5 +1,10 @@
 # ProCurrency Codebase Development
 
+## ATTENTION:
+This Repository is only for Testing, it may not be Stable.
+Please use ProCurrency main repo for Production:
+https://github.com/procommerce-io/procurrency
+
 ===========================================
 
 ### Coin Specs

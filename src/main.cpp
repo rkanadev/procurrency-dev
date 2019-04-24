@@ -17,15 +17,19 @@
 #include "kernel.h"
 #include "smessage.h"
 
-
+#include <boost/algorithm/string/replace.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/filesystem/fstream.hpp>
+#include <boost/lexical_cast.hpp>
 using namespace std;
+using namespace boost;
 
 //
 // Global state
 //
 
 CCriticalSection cs_setpwalletRegistered;
-std::set<CWallet*> setpwalletRegistered;
+set<CWallet*> setpwalletRegistered;
 
 CCriticalSection cs_main;
 
@@ -57,16 +61,14 @@ uint256 nBestInvalidTrust = 0;
 uint256 hashBestChain = 0;
 CBlockIndex* pindexBest = NULL;
 CBlockThinIndex* pindexBestHeader;
-
 int64_t nTimeBestReceived = 0;
 bool fImporting = false;
+bool fCheckForUpdates = DEFAULT_CHECK_FOR_UPDATES; // Proc Release Checker
 
 CMedianFilter<int> cPeerBlockCounts(5, 0); // Amount of blocks that other nodes claim to have
 
 std::map<uint256, CBlockThin*> mapOrphanBlockThins;
-
 std::map<int64_t, CAnonOutputCount> mapAnonOutputStats; // display only, not 100% accurate, height could become inaccurate due to undos
-
 std::multimap<uint256, CBlockThin*> mapOrphanBlockThinsByPrev;
 
 map<uint256, COrphanBlock*> mapOrphanBlocks;
@@ -87,10 +89,7 @@ CScript COINBASE_FLAGS;
 
 const string strMessageMagic = "ProCurrency Signed Message:\n";
 
-// Settings
-int64_t nTransactionFee = MIN_TX_FEE;
-int64_t nReserveBalance = 0;
-int64_t nMinimumInputValue = 0;
+std::set<uint256> setValidatedTx;
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -99,21 +98,41 @@ int64_t nMinimumInputValue = 0;
 
 // These functions dispatch to one or all registered wallets
 
+namespace {
 
-void RegisterWallet(CWallet* pwalletIn)
-{
-    {
-        LOCK(cs_setpwalletRegistered);
-        setpwalletRegistered.insert(pwalletIn);
-    }
+struct CMainSignals {
+    // Tells listeners to broadcast their data.
+    boost::signals2::signal<void (bool)> Broadcast;
+	// Notifies listeners of an erased transaction (currently disabled, requires transaction replacement).
+    boost::signals2::signal<void (const uint256 &)> EraseTransaction;
+} g_signals;
 }
 
-void UnregisterWallet(CWallet* pwalletIn)
+//void RegisterWallet(CWallet* pwalletIn)
+void RegisterWallet(CWalletInterface* pwalletIn)
 {
-    {
+    /*{
+        LOCK(cs_setpwalletRegistered);
+        setpwalletRegistered.insert(pwalletIn);
+    }*/
+    g_signals.Broadcast.connect(boost::bind(&CWalletInterface::ResendWalletTransactions, pwalletIn, _1));
+	g_signals.EraseTransaction.connect(boost::bind(&CWalletInterface::EraseFromWallet, pwalletIn, _1));
+}
+
+//void UnregisterWallet(CWallet* pwalletIn)
+void UnregisterWallet(CWalletInterface* pwalletIn)
+{
+    /*{
         LOCK(cs_setpwalletRegistered);
         setpwalletRegistered.erase(pwalletIn);
-    }
+    }*/
+	g_signals.Broadcast.disconnect(boost::bind(&CWalletInterface::ResendWalletTransactions, pwalletIn, _1));
+	g_signals.EraseTransaction.disconnect(boost::bind(&CWalletInterface::EraseFromWallet, pwalletIn, _1));
+}
+
+void UnregisterAllWallets() {
+    g_signals.Broadcast.disconnect_all_slots();
+	g_signals.EraseTransaction.disconnect_all_slots();
 }
 
 // check whether the passed transaction is from us
@@ -135,11 +154,11 @@ bool static GetTransaction(const uint256& hashTx, CWalletTx& wtx)
 }
 
 // erases transaction with the given hash from all wallets
-//void static EraseFromWallets(uint256 hash)
-//{
-//    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-//        pwallet->EraseFromWallet(hash);
-//}
+/*void static EraseFromWallets(uint256 hash)
+{
+    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
+    pwallet->EraseFromWallet(hash);
+}*/
 
 // make sure all wallets know about the given transaction, in the given block
 void SyncWithWallets(const CTransaction& tx, const CBlock* pblock, bool fUpdate, bool fConnect)
@@ -228,8 +247,9 @@ void static Inventory(const uint256& hash)
 // ask wallets to resend their transactions
 void ResendWalletTransactions(bool fForce)
 {
-    BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
-        pwallet->ResendWalletTransactions(fForce);
+	g_signals.Broadcast(fForce);
+    //BOOST_FOREACH(CWallet* pwallet, setpwalletRegistered)
+        //pwallet->ResendWalletTransactions(fForce);
 }
 
 bool SetHeightFilteredNeeded()
@@ -445,9 +465,98 @@ bool GetCoinAgeThin(CTransaction txCoinStake, uint64_t& nCoinAge, std::vector<co
     return true;
 }
 
-bool GetNodeStateStats(NodeId nodeid, CNodeStateStats &stats)
+
+
+//////////////////////////////////////////////////////////////////////////////
+//
+// Registration of network node signals.
+//
+
+namespace {
+// Maintain validation-specific state about nodes, protected by cs_main, instead
+// by CNode's own locks. This simplifies asynchronous operation, where
+// processing of incoming data is done after the ProcessMessage call returns,
+// and we're no longer holding the node's locks.
+struct CNodeState {
+    // Accumulated misbehaviour score for this peer.
+    int nMisbehavior;
+    // Whether this peer should be disconnected and banned.
+    bool fShouldBan;
+    std::string name;
+
+    CNodeState() {
+        nMisbehavior = 0;
+        fShouldBan = false;
+    }
+};
+
+map<NodeId, CNodeState> mapNodeState;
+
+// Requires cs_main.
+CNodeState *State(NodeId pnode) {
+    map<NodeId, CNodeState>::iterator it = mapNodeState.find(pnode);
+    if (it == mapNodeState.end())
+        return NULL;
+    return &it->second;
+}
+
+int GetHeight()
 {
-    // TODO:
+    while(true){
+        TRY_LOCK(cs_main, lockMain);
+        if(!lockMain) { MilliSleep(50); continue; }
+        return pindexBest->nHeight;
+    }
+}
+
+void InitializeNode(NodeId nodeid, const CNode *pnode) {
+    LOCK(cs_main);
+    CNodeState &state = mapNodeState.insert(std::make_pair(nodeid, CNodeState())).first->second;
+    state.name = pnode->addrName;
+}
+
+void FinalizeNode(NodeId nodeid) {
+    LOCK(cs_main);
+    mapNodeState.erase(nodeid);
+}
+
+}
+
+bool GetNodeStateStats(NodeId nodeid, CNodeStateStats &stats) {
+    LOCK(cs_main);
+    CNodeState *state = State(nodeid);
+    if (state == NULL)
+        return false;
+    stats.nMisbehavior = state->nMisbehavior;
+    return true;
+}
+
+
+void RegisterNodeSignals(CNodeSignals& nodeSignals)
+{
+    nodeSignals.GetHeight.connect(&GetHeight);
+    nodeSignals.ProcessMessages.connect(&ProcessMessages);
+    nodeSignals.SendMessages.connect(&SendMessages);
+    nodeSignals.InitializeNode.connect(&InitializeNode);
+    nodeSignals.FinalizeNode.connect(&FinalizeNode);
+}
+
+void UnregisterNodeSignals(CNodeSignals& nodeSignals)
+{
+    nodeSignals.GetHeight.disconnect(&GetHeight);
+    nodeSignals.ProcessMessages.disconnect(&ProcessMessages);
+    nodeSignals.SendMessages.disconnect(&SendMessages);
+    nodeSignals.InitializeNode.disconnect(&InitializeNode);
+    nodeSignals.FinalizeNode.disconnect(&FinalizeNode);
+}
+
+bool AbortNode(const std::string &strMessage, const std::string &userMessage) {
+    strMiscWarning = strMessage;
+    LogPrintf("*** %s\n", strMessage);
+    uiInterface.ThreadSafeMessageBox(
+        userMessage.empty() ? _("Error: A fatal internal error occured, see debug.log for details") : userMessage,
+        "", CClientUIInterface::MSG_ERROR);
+    StartShutdown();
     return false;
 }
 
@@ -520,8 +629,6 @@ unsigned int LimitOrphanTxSize(unsigned int nMaxOrphans)
     }
     return nEvicted;
 }
-
-
 
 
 
@@ -2629,6 +2736,112 @@ bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 
     return true;
 }
+/* //TODO: BuildAddrIndex
+bool static BuildAddrIndex(const CScript &script, std::vector<uint160>& addrIds)
+{
+    CScript::const_iterator pc = script.begin();
+    CScript::const_iterator pend = script.end();
+    std::vector<unsigned char> data;
+    opcodetype opcode;
+    bool fHaveData = false;
+    while (pc < pend) {
+        script.GetOp(pc, opcode, data);
+        if (0 <= opcode && opcode <= OP_PUSHDATA4 && data.size() >= 8) { // data element
+            uint160 addrid = 0;
+            if (data.size() <= 20) {
+                memcpy(&addrid, &data[0], data.size());
+            } else {
+                addrid = Hash160(data);
+            }
+            addrIds.push_back(addrid);
+            fHaveData = true;
+        }
+    }
+    if (!fHaveData) {
+        uint160 addrid = Hash160(script);
+    addrIds.push_back(addrid);
+        return true;
+    }
+    else
+    {
+    if(addrIds.size() > 0)
+        return true;
+    else
+        return false;
+    }
+}*/
+
+bool FindTransactionsByDestination(const CTxDestination &dest, std::vector<uint256> &vtxhash) {
+    uint160 addrid = 0;
+    const CKeyID *pkeyid = boost::get<CKeyID>(&dest);
+    if (pkeyid)
+        addrid = static_cast<uint160>(*pkeyid);
+    if (!addrid) {
+        const CScriptID *pscriptid = boost::get<CScriptID>(&dest);
+        if (pscriptid)
+            addrid = static_cast<uint160>(*pscriptid);
+    }
+    if (!addrid)
+    {
+        LogPrintf("FindTransactionsByDestination(): Couldn't parse dest into addrid\n");
+        return false;
+    }
+
+    LOCK(cs_main);
+    CTxDB txdb("r");
+    if(!txdb.ReadAddrIndex(addrid, vtxhash))
+    {
+        LogPrintf("FindTransactionsByDestination(): txdb.ReadAddrIndex failed\n");
+        return false;
+    }
+    return true;
+}
+/**** //TODO: RebuildAddressIndex
+void CBlock::RebuildAddressIndex(CTxDB& txdb)
+{
+    BOOST_FOREACH(CTransaction& tx, vtx)
+    {
+        uint256 hashTx = tx.GetHash();
+        // inputs
+        if(!tx.IsCoinBase())
+        {
+            MapPrevTx mapInputs;
+            map<uint256, CTxIndex> mapQueuedChangesT;
+            bool fInvalid;
+            if (!tx.FetchInputs(txdb, mapQueuedChangesT, true, false, mapInputs, fInvalid))
+                return;
+
+            MapPrevTx::const_iterator mi;
+            for(MapPrevTx::const_iterator mi = mapInputs.begin(); mi != mapInputs.end(); ++mi)
+            {
+                BOOST_FOREACH(const CTxOut &atxout, (*mi).second.second.vout)
+                {
+                    std::vector<uint160> addrIds;
+                    if(BuildAddrIndex(atxout.scriptPubKey, addrIds))
+                    {
+                        BOOST_FOREACH(uint160 addrId, addrIds)
+                        {
+                            if(!txdb.WriteAddrIndex(addrId, hashTx))
+                                LogPrintf("RebuildAddressIndex(): txins WriteAddrIndex failed addrId: %s txhash: %s\n", addrId.ToString().c_str(), hashTx.ToString().c_str());
+                        }
+                    }
+                }
+            }
+        }
+        // outputs
+        BOOST_FOREACH(const CTxOut &atxout, tx.vout) {
+            std::vector<uint160> addrIds;
+            if(BuildAddrIndex(atxout.scriptPubKey, addrIds))
+            {
+                BOOST_FOREACH(uint160 addrId, addrIds)
+                {
+                    if(!txdb.WriteAddrIndex(addrId, hashTx))
+                        LogPrintf("RebuildAddressIndex(): txouts WriteAddrIndex failed addrId: %s txhash: %s\n", addrId.ToString().c_str(), hashTx.ToString().c_str());
+                }
+            }
+        }
+    }
+}*/
 
 bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
 {
@@ -2766,16 +2979,19 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
         if (!vtx[1].GetCoinAge(txdb, pindex->pprev, nCoinAge))
             return error("ConnectBlock() : %s unable to get coin age for coinstake", vtx[1].GetHash().ToString());
 
-        int64_t nCalculatedStakeReward = Params().GetProofOfStakeReward(pindex->nHeight, nCoinAge, nFees);
+        //int64_t nCalculatedStakeReward = Params().GetProofOfStakeReward(pindex->nHeight, nCoinAge, nFees);
+		int64_t nCalculatedStakeReward = Params().GetProofOfStakeReward(pindex->pprev, nCoinAge, nFees);
 
         if (nStakeReward > nCalculatedStakeReward)
             return DoS(100, error("ConnectBlock() : coinstake pays too much(actual=%d vs calculated=%d)", nStakeReward, nCalculatedStakeReward));
     }
 
     // ppcoin: track money supply and mint amount info
+#ifndef LOWMEM	
     pindex->nMint = nValueOut - nValueIn + nFees;
     pindex->nMoneySupply = (pindex->pprev? pindex->pprev->nMoneySupply : 0) + nValueOut - nValueIn;
     pindex->nTokenSupply  = (pindex->pprev? pindex->pprev->nTokenSupply  : 0) + nAnonOut - nAnonIn;
+#endif	
     if (!txdb.WriteBlockIndex(CDiskBlockIndex(pindex)))
         return error("ConnectBlock() : WriteBlockIndex for pindex failed");
 
@@ -6226,7 +6442,8 @@ bool ProcessMessages(CNode* pfrom)
 }
 
 //
-bool SendMessages(CNode* pto, std::vector<CNode*> &vNodesCopy, bool fSendTrickle)
+//bool SendMessages(CNode* pto, std::vector<CNode*> &vNodesCopy, bool fSendTrickle)
+bool SendMessages(CNode* pto, bool fSendTrickle)
 {
 	TRY_LOCK(cs_main, lockMain);
 	if (lockMain) {
@@ -6300,7 +6517,8 @@ bool SendMessages(CNode* pto, std::vector<CNode*> &vNodesCopy, bool fSendTrickle
 		static int64_t nLastRebroadcast;
 		if (!IsInitialBlockDownload() && (GetTime() - nLastRebroadcast > 24 * 60 * 60))
 		{
-			BOOST_FOREACH(CNode* pnode, vNodesCopy)
+			LOCK(cs_vNodes);
+			BOOST_FOREACH(CNode* pnode, vNodes)
 			{
 				// Periodically clear setAddrKnown to allow refresh broadcasts
 				if (nLastRebroadcast)

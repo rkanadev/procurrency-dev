@@ -1,8 +1,7 @@
 // Copyright (c) 2014 The ProCurrency developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
-
-#include "gui.h"
+#include "procgui.h"
 #include "transactiontablemodel.h"
 #include "transactionrecord.h"
 
@@ -10,6 +9,7 @@
 #include "clientmodel.h"
 #include "walletmodel.h"
 #include "messagemodel.h"
+#include "optionsdialog.h"
 #include "optionsmodel.h"
 #include "addresstablemodel.h"
 #include "bitcoinunits.h"
@@ -20,6 +20,8 @@
 #include "wallet.h"
 #include "util.h"
 #include "init.h"
+#include "multisig/multisigdialog.h"
+#include "procreleasechecker.h"
 
 #ifdef Q_OS_MAC
 #include "macdockiconhandler.h"
@@ -56,9 +58,9 @@
 extern CWallet* pwalletMain;
 double GetPoSKernelPS();
 
-GUI::GUI(QWidget *parent):
+ProcGUI::ProcGUI(QWidget *parent):
     QMainWindow(parent),
-    bridge(new UIBridge(this)),
+    procbridge(new UIProcBridge(this)),
     clientModel(0),
     walletModel(0),
     messageModel(0),
@@ -70,6 +72,7 @@ GUI::GUI(QWidget *parent):
     trayIcon(0),
     notificator(0),
     rpcConsole(0),
+	procReleaseChecker(0),
     nWeight(0)
 {
     webView = new QWebView();
@@ -107,22 +110,32 @@ GUI::GUI(QWidget *parent):
 
     // Create the tray icon (or setup the dock icon)
     createTrayIcon();
-
+	
+	// multisig dialog
+	multisigPage = new MultisigDialog(this);
+	procReleaseChecker = new ProcReleaseChecker(this);
+	
     rpcConsole = new RPCConsole(this);
     connect(openRPCConsoleAction, SIGNAL(triggered()), rpcConsole, SLOT(show()));
 	
 	// clicking on automatic backups shows details
     connect(showBackupsAction, SIGNAL(triggered()), rpcConsole, SLOT(showBackups()));
     
-    // prevents an oben debug window from becoming stuck/unusable on client shutdown
+    // prevents an open debug window from becoming stuck/unusable on client shutdown
     connect(quitAction, SIGNAL(triggered()), rpcConsole, SLOT(hide()));
 
     documentFrame = webView->page()->mainFrame();
 
     QWebSettings::globalSettings()->setAttribute(QWebSettings::DeveloperExtrasEnabled, true);
+	
+	if(fCheckForUpdates && procReleaseChecker->newVersionAvailable())
+    {
+        QString link = QString("<a href=%1>%2</a>").arg(PROC_RELEASES, PROC_RELEASES);
+        QString message(tr("A new version of ProCurrency wallet is available on Github: <br /> %1. <br />It is recommended to download and update your wallet to the latest release").arg(link));
+        QMessageBox::information(this, tr("Check for updates"), message);
+    }
 
-    //connect(webView->page()->action(QWebPage::Reload), SIGNAL(triggered()), SLOT(pageLoaded(bool)));
-
+    /*connect(webView->page()->action(QWebPage::Reload), SIGNAL(triggered()), SLOT(pageLoaded(bool)));*/
     connect(webView, SIGNAL(loadFinished(bool)),                    SLOT(pageLoaded(bool)));
     connect(documentFrame, SIGNAL(javaScriptWindowObjectCleared()), SLOT(addJavascriptObjects()));
     connect(documentFrame, SIGNAL(urlChanged(QUrl)),                SLOT(urlClicked(const QUrl&)));
@@ -139,7 +152,7 @@ GUI::GUI(QWidget *parent):
         webView->setUrl(QUrl("qrc:///res/index.html"));
 }
 
-GUI::~GUI()
+ProcGUI::~ProcGUI()
 {
     if(trayIcon) // Hide tray icon, as deleting will let it linger until quit (on Ubuntu)
         trayIcon->hide();
@@ -149,7 +162,7 @@ GUI::~GUI()
 #endif
 }
 
-void GUI::pageLoaded(bool ok)
+void ProcGUI::pageLoaded(bool ok)
 {
     if (GetBoolArg("-staking", true))
     {
@@ -160,12 +173,12 @@ void GUI::pageLoaded(bool ok)
     }
 }
 
-void GUI::addJavascriptObjects()
+void ProcGUI::addJavascriptObjects()
 {
-    documentFrame->addToJavaScriptWindowObject("bridge", bridge);
+    documentFrame->addToJavaScriptWindowObject("procbridge", procbridge);
 }
 
-void GUI::urlClicked(const QUrl & link)
+void ProcGUI::urlClicked(const QUrl & link)
 {
     if(link.scheme() == "qrc" || link.scheme() == "file")
         return;
@@ -173,7 +186,7 @@ void GUI::urlClicked(const QUrl & link)
     QDesktopServices::openUrl(link);
 }
 
-void GUI::createActions()
+void ProcGUI::createActions()
 {
 
     quitAction = new QAction(QIcon(":/icons/quit"), tr("E&xit"), this);
@@ -186,9 +199,12 @@ void GUI::createActions()
     aboutQtAction = new QAction(QIcon(":/trolltech/qmessagebox/images/qtlogo-64.png"), tr("About &Qt"), this);
     aboutQtAction->setToolTip(tr("Show information about Qt"));
     aboutQtAction->setMenuRole(QAction::AboutQtRole);
-    optionsAction = new QAction(QIcon(":/icons/options"), tr("&Options..."), this);
+    optionsAction = new QAction(QIcon(":/icons/config"), tr("&Configuration..."), this);
     optionsAction->setToolTip(tr("Modify configuration options for ProCurrency"));
     optionsAction->setMenuRole(QAction::PreferencesRole);
+	options2Action = new QAction(QIcon(":/icons/options2"), tr("&Options..."), this);
+    options2Action->setToolTip(tr("Modify configuration options for ProCurrency"));
+    options2Action->setMenuRole(QAction::PreferencesRole);
     toggleHideAction = new QAction(QIcon(":/icons/bitcoin"), tr("&Show / Hide"), this);
     encryptWalletAction = new QAction(QIcon(":/icons/lock_closed"), tr("&Encrypt Wallet..."), this);
     encryptWalletAction->setToolTip(tr("Encrypt or decrypt wallet"));
@@ -209,11 +225,17 @@ void GUI::createActions()
 	
 	showBackupsAction = new QAction(QIcon(":/icons/filesave"), tr("Show Auto&Backups"), this);
     showBackupsAction->setToolTip(tr("Open Auto Backups Folder"));
+	
+	multisigAction = new QAction(QIcon(":/icons/multisig"), tr("Multisig"), this);
 
+	connect(multisigAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
+    connect(multisigAction, SIGNAL(triggered()), this, SLOT(gotoMultisigPage()));
+	
     connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
     connect(aboutAction, SIGNAL(triggered()), SLOT(aboutClicked()));
     connect(aboutQtAction, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
     connect(optionsAction, SIGNAL(triggered()), SLOT(optionsClicked()));
+	connect(options2Action, SIGNAL(triggered()), SLOT(options2Clicked()));
     connect(toggleHideAction, SIGNAL(triggered()), SLOT(toggleHidden()));
     connect(encryptWalletAction, SIGNAL(triggered(bool)), SLOT(encryptWallet(bool)));
     connect(backupWalletAction, SIGNAL(triggered()), SLOT(backupWallet()));
@@ -222,7 +244,7 @@ void GUI::createActions()
     connect(lockWalletAction, SIGNAL(triggered()), SLOT(lockWallet()));
 }
 
-void GUI::createMenuBar()
+void ProcGUI::createMenuBar()
 {
 #ifdef Q_OS_MAC
     // Create a decoupled menu bar on Mac which stays even if the window is closed
@@ -237,6 +259,7 @@ void GUI::createMenuBar()
     QMenu *file = appMenuBar->addMenu(tr("&File"));
     file->addAction(backupWalletAction);
     //file->addAction(exportAction);
+	file->addAction(multisigAction);
     file->addSeparator();
     file->addAction(quitAction);
 
@@ -247,6 +270,7 @@ void GUI::createMenuBar()
     settings->addAction(lockWalletAction);
     settings->addSeparator();
     settings->addAction(optionsAction);
+	settings->addAction(options2Action);
 	settings->addAction(showBackupsAction);
 
     QMenu *help = appMenuBar->addMenu(tr("&Help"));
@@ -256,7 +280,7 @@ void GUI::createMenuBar()
     help->addAction(aboutQtAction);
 }
 
-void GUI::setClientModel(ClientModel *clientModel)
+void ProcGUI::setClientModel(ClientModel *clientModel)
 {
     this->clientModel = clientModel;
     if (clientModel)
@@ -299,11 +323,11 @@ void GUI::setClientModel(ClientModel *clientModel)
 
         rpcConsole->setClientModel(clientModel);
 
-        bridge->setClientModel();
+        procbridge->setClientModel();
     }
 }
 
-void GUI::setWalletModel(WalletModel *walletModel)
+void ProcGUI::setWalletModel(WalletModel *walletModel)
 {
     this->walletModel = walletModel;
     if(walletModel)
@@ -335,22 +359,22 @@ void GUI::setWalletModel(WalletModel *walletModel)
         // Ask for passphrase if needed
         connect(walletModel, SIGNAL(requireUnlock()), this, SLOT(unlockWallet()));
 
-        bridge->setWalletModel();
+        procbridge->setWalletModel();
     }
 }
 
-void GUI::setMessageModel(MessageModel *messageModel)
+void ProcGUI::setMessageModel(MessageModel *messageModel)
 {
     this->messageModel = messageModel;
     if(messageModel)
     {
         // Balloon pop-up for new message
         connect(messageModel, SIGNAL(rowsInserted(QModelIndex,int,int)), SLOT(incomingMessage(QModelIndex,int,int)));
-        bridge->setMessageModel();
+        procbridge->setMessageModel();
     }
 }
 
-void GUI::createTrayIcon()
+void ProcGUI::createTrayIcon()
 {
     QMenu *trayIconMenu;
 #ifndef Q_OS_MAC
@@ -374,6 +398,7 @@ void GUI::createTrayIcon()
     trayIconMenu->addSeparator();
     trayIconMenu->addSeparator();
     trayIconMenu->addAction(optionsAction);
+	trayIconMenu->addAction(options2Action);
     trayIconMenu->addAction(openRPCConsoleAction);
 	trayIconMenu->addAction(showBackupsAction);
 #ifndef Q_OS_MAC // This is built-in on Mac
@@ -385,7 +410,7 @@ void GUI::createTrayIcon()
 }
 
 #ifndef Q_OS_MAC
-void GUI::trayIconActivated(QSystemTrayIcon::ActivationReason reason)
+void ProcGUI::trayIconActivated(QSystemTrayIcon::ActivationReason reason)
 {
     if(reason == QSystemTrayIcon::Trigger)
     {
@@ -395,14 +420,14 @@ void GUI::trayIconActivated(QSystemTrayIcon::ActivationReason reason)
 }
 #endif
 
-void GUI::aboutClicked()
+void ProcGUI::aboutClicked()
 {
     AboutDialog dlg;
     dlg.setModel(clientModel);
     dlg.exec();
 }
 
-void GUI::setNumConnections(int count)
+void ProcGUI::setNumConnections(int count)
 {
     QWebElement connectionsIcon = documentFrame->findFirstElement("#connectionsIcon");
 
@@ -421,7 +446,7 @@ void GUI::setNumConnections(int count)
     connectionsIcon.setAttribute("data-title", tr("%n active connection(s) to ProCurrency network", "", count));
 }
 
-void GUI::setNumBlocks(int count, int nTotalBlocks)
+void ProcGUI::setNumBlocks(int count, int nTotalBlocks)
 {
     QWebElement blocksIcon  = documentFrame->findFirstElement("#blocksIcon");
     QWebElement syncingIcon = documentFrame->findFirstElement("#syncingIcon");
@@ -466,7 +491,7 @@ void GUI::setNumBlocks(int count, int nTotalBlocks)
 
         if (strStatusBarWarnings.isEmpty())
         {
-            bridge->networkAlert("");
+            procbridge->networkAlert("");
             tooltip = tr("Synchronizing with network...");
 
             if (nNodeMode == NT_FULL)
@@ -493,7 +518,7 @@ void GUI::setNumBlocks(int count, int nTotalBlocks)
 
     // Override progressBarLabel text when we have warnings to display
     if (!strStatusBarWarnings.isEmpty())
-        bridge->networkAlert(strStatusBarWarnings);
+        procbridge->networkAlert(strStatusBarWarnings);
 
     QDateTime lastBlockDate;
     if (nNodeMode == NT_FULL)
@@ -567,7 +592,7 @@ void GUI::setNumBlocks(int count, int nTotalBlocks)
     syncProgressBar.setAttribute("max",   QString::number(nTotalBlocks));
 }
 
-void GUI::error(const QString &title, const QString &message, bool modal)
+void ProcGUI::error(const QString &title, const QString &message, bool modal)
 {
     // Report errors from network/worker thread
     if(modal)
@@ -579,7 +604,7 @@ void GUI::error(const QString &title, const QString &message, bool modal)
     }
 }
 
-void GUI::changeEvent(QEvent *e)
+void ProcGUI::changeEvent(QEvent *e)
 {
     QMainWindow::changeEvent(e);
 #ifndef Q_OS_MAC // Ignored on Mac
@@ -598,7 +623,7 @@ void GUI::changeEvent(QEvent *e)
 #endif
 }
 
-void GUI::closeEvent(QCloseEvent *event)
+void ProcGUI::closeEvent(QCloseEvent *event)
 {
     if(clientModel)
     {
@@ -613,7 +638,7 @@ void GUI::closeEvent(QCloseEvent *event)
     QMainWindow::closeEvent(event);
 }
 
-void GUI::askFee(qint64 nFeeRequired, bool *payFee)
+void ProcGUI::askFee(qint64 nFeeRequired, bool *payFee)
 {
     QString strMessage =
         tr("This transaction is over the size limit.  You can still send it for a fee of %1, "
@@ -626,7 +651,7 @@ void GUI::askFee(qint64 nFeeRequired, bool *payFee)
     *payFee = (retval == QMessageBox::Yes);
 }
 
-void GUI::incomingTransaction(const QModelIndex & parent, int start, int end)
+void ProcGUI::incomingTransaction(const QModelIndex & parent, int start, int end)
 {
     if(!walletModel || !clientModel || clientModel->inInitialBlockDownload() || !nNodeState == NS_READY)
         return;
@@ -661,7 +686,7 @@ void GUI::incomingTransaction(const QModelIndex & parent, int start, int end)
                           .arg(address), icon);
 }
 
-void GUI::incomingMessage(const QModelIndex & parent, int start, int end)
+void ProcGUI::incomingMessage(const QModelIndex & parent, int start, int end)
 {
     if(!messageModel)
         return;
@@ -694,25 +719,34 @@ void GUI::incomingMessage(const QModelIndex & parent, int start, int end)
     };
 }
 
-void GUI::optionsClicked()
+void ProcGUI::optionsClicked()
 {
-    bridge->triggerElement("#navitems a[href=#options]", "click");
+    procbridge->triggerElement("#navitems a[href=#options]", "click");
     showNormalIfMinimized();
 }
 
-void GUI::dragEnterEvent(QDragEnterEvent *event)
+void ProcGUI::options2Clicked()
+{
+    if(!clientModel || !clientModel->getOptionsModel())
+        return;
+    OptionsDialog dlg;
+    dlg.setModel(clientModel->getOptionsModel());
+    dlg.exec();
+}
+
+void ProcGUI::dragEnterEvent(QDragEnterEvent *event)
 {
     // Accept only URIs
     if(event->mimeData()->hasUrls())
         event->acceptProposedAction();
 }
 
-void GUI::dragMoveEvent(QDragMoveEvent *event)
+void ProcGUI::dragMoveEvent(QDragMoveEvent *event)
 {
     event->accept();
 }
 
-void GUI::dropEvent(QDropEvent *event)
+void ProcGUI::dropEvent(QDropEvent *event)
 {
     if(event->mimeData()->hasUrls())
     {
@@ -726,7 +760,7 @@ void GUI::dropEvent(QDropEvent *event)
 
         // if valid URIs were found
         if (nValidUrisFound)
-            bridge->triggerElement("#navitems a[href=#send]", "click");
+            procbridge->triggerElement("#navitems a[href=#send]", "click");
         else
             notificator->notify(Notificator::Warning, tr("URI handling"), tr("URI can not be parsed! This can be caused by an invalid ProCurrency address or malformed URI parameters."));
     }
@@ -734,7 +768,7 @@ void GUI::dropEvent(QDropEvent *event)
     event->acceptProposedAction();
 }
 
-void GUI::handleURI(QString strURI)
+void ProcGUI::handleURI(QString strURI)
 {
 
     SendCoinsRecipient rv;
@@ -746,7 +780,7 @@ void GUI::handleURI(QString strURI)
         if (!address.IsValid())
             return;
 
-        bridge->emitReceipient(rv.address, rv.label, rv.narration, rv.amount);
+        procbridge->emitReceipient(rv.address, rv.label, rv.narration, rv.amount);
 
         showNormalIfMinimized();
     }
@@ -754,7 +788,7 @@ void GUI::handleURI(QString strURI)
         notificator->notify(Notificator::Warning, tr("URI handling"), tr("URI can not be parsed! This can be caused by an invalid ProCurrency address or malformed URI parameters."));
 }
 
-void GUI::setEncryptionStatus(int status)
+void ProcGUI::setEncryptionStatus(int status)
 {
     QWebElement encryptionIcon    = documentFrame->findFirstElement("#encryptionIcon");
     QWebElement encryptButton     = documentFrame->findFirstElement("#encryptWallet");
@@ -825,7 +859,7 @@ void GUI::setEncryptionStatus(int status)
     }
 }
 
-void GUI::encryptWallet(bool status)
+void ProcGUI::encryptWallet(bool status)
 {
     if(!walletModel)
         return;
@@ -837,7 +871,7 @@ void GUI::encryptWallet(bool status)
     setEncryptionStatus(walletModel->getEncryptionStatus());
 }
 
-void GUI::backupWallet()
+void ProcGUI::backupWallet()
 {
     QString saveDir = QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation);
     QString filename = QFileDialog::getSaveFileName(this, tr("Backup Wallet"), saveDir, tr("Wallet Data (*.dat)"));
@@ -850,14 +884,20 @@ void GUI::backupWallet()
     }
 }
 
-void GUI::changePassphrase()
+void ProcGUI::changePassphrase()
 {
     AskPassphraseDialog dlg(AskPassphraseDialog::ChangePass, this);
     dlg.setModel(walletModel);
     dlg.exec();
 }
 
-void GUI::unlockWallet()
+void ProcGUI::gotoMultisigPage()
+{
+    multisigPage->show();
+    multisigPage->setFocus();
+}
+
+void ProcGUI::unlockWallet()
 {
     if(!walletModel)
         return;
@@ -874,7 +914,7 @@ void GUI::unlockWallet()
     }
 }
 
-void GUI::lockWallet()
+void ProcGUI::lockWallet()
 {
     if(!walletModel)
         return;
@@ -885,7 +925,7 @@ void GUI::lockWallet()
 #endif
 }
 
-void GUI::toggleLock()
+void ProcGUI::toggleLock()
 {
     if(!walletModel)
         return;
@@ -904,7 +944,7 @@ void GUI::toggleLock()
     
 }
 
-void GUI::showNormalIfMinimized(bool fToggleHidden)
+void ProcGUI::showNormalIfMinimized(bool fToggleHidden)
 {
     // activateWindow() (sometimes) helps with keyboard focus on Windows
     if (isHidden())
@@ -926,12 +966,12 @@ void GUI::showNormalIfMinimized(bool fToggleHidden)
         hide();
 }
 
-void GUI::toggleHidden()
+void ProcGUI::toggleHidden()
 {
     showNormalIfMinimized(true);
 }
 
-void GUI::updateWeight()
+void ProcGUI::updateWeight()
 {
     if (!pwalletMain)
         return;
@@ -951,7 +991,7 @@ void GUI::updateWeight()
         nWeight = pwalletMain->GetStakeWeight();	
 }
 
-void GUI::updateStakingIcon()
+void ProcGUI::updateStakingIcon()
 {
     QWebElement stakingIcon = documentFrame->findFirstElement("#stakingIcon");
     uint64_t nNetworkWeight = 0;
@@ -1004,7 +1044,7 @@ void GUI::updateStakingIcon()
     }
 }
 
-void GUI::detectShutdown()
+void ProcGUI::detectShutdown()
 {
     if (ShutdownRequested())
         QMetaObject::invokeMethod(QCoreApplication::instance(), "quit", Qt::QueuedConnection);

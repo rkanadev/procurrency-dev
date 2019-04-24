@@ -4,12 +4,12 @@
     <message>
         <location filename="../forms/aboutdialog.ui" line="+14"/>
         <source>About ProCurrency</source>
-        <translation>O ShadowCoinu</translation>
+        <translation>O ProCurrencyu</translation>
     </message>
     <message>
         <location line="+39"/>
         <source>&lt;b&gt;ProCurrency&lt;/b&gt; version</source>
-        <translation>Verze &lt;b&gt;ShadowCoinu&lt;/b&gt; </translation>
+        <translation>Verze &lt;b&gt;ProCurrencyu&lt;/b&gt; </translation>
     </message>
     <message>
         <location line="+41"/>
@@ -308,9 +308,9 @@ Tento produkt zahrnuje programy vyvinuté OpenSSL Projektem pro použití v Open
     </message>
 </context>
 <context>
-    <name>BitcoinGUI</name>
+    <name>ProcGUI</name>
     <message>
-        <location filename="../bitcoingui.cpp" line="+280"/>
+        <location filename="../procgui.cpp" line="+280"/>
         <source>Sign &amp;message...</source>
         <translation>Po&amp;depiš zprávu...</translation>
     </message>
@@ -1741,7 +1741,7 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
     </message>
     <message>
         <location filename="../sendcoinsdialog.cpp" line="-173"/>
-        <source>Enter a ProCurrency address (e.g. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</source>
+        <source>Enter a ProCurrency address (e.g. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</source>
         <translation type="unfinished"/>
     </message>
     <message>
@@ -1885,7 +1885,7 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
     </message>
     <message>
         <location line="+18"/>
-        <source>The address to send the payment to  (e.g. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</source>
+        <source>The address to send the payment to  (e.g. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</source>
         <translation type="unfinished"/>
     </message>
     <message>
@@ -1915,7 +1915,7 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
     </message>
     <message>
         <location filename="../sendcoinsentry.cpp" line="+1"/>
-        <source>Enter a ProCurrency address (e.g. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</source>
+        <source>Enter a ProCurrency address (e.g. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</source>
         <translation type="unfinished"/>
     </message>
 </context>
@@ -1939,7 +1939,7 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
     </message>
     <message>
         <location line="+18"/>
-        <source>The address to sign the message with (e.g. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</source>
+        <source>The address to sign the message with (e.g. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</source>
         <translation type="unfinished"/>
     </message>
     <message>
@@ -2003,7 +2003,7 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
     </message>
     <message>
         <location line="+21"/>
-        <source>The address the message was signed with (e.g. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</source>
+        <source>The address the message was signed with (e.g. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</source>
         <translation type="unfinished"/>
     </message>
     <message>
@@ -2019,7 +2019,7 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
     <message>
         <location filename="../signverifymessagedialog.cpp" line="+27"/>
         <location line="+3"/>
-        <source>Enter a ProCurrency address (e.g. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</source>
+        <source>Enter a ProCurrency address (e.g. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</source>
         <translation type="unfinished"/>
     </message>
     <message>

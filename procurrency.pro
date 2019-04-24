@@ -9,9 +9,6 @@ CONFIG += no_include_pwd
 CONFIG += thread
 CONFIG += openssl
 
-#CONFIG += otp_enabled
-#CONFIG += trading_enabled
-
 # Mobile devices
 android:ios{
     CONFIG += mobility
@@ -91,8 +88,8 @@ macx {
     OPENSSL_INCLUDE_PATH=/usr/local/opt/openssl/include
     OPENSSL_LIB_PATH=/usr/local/opt/openssl/lib
 
-    BDB_INCLUDE_PATH=/usr/local/Cellar/berkeley-db/6.1.26/include
-    BDB_LIB_PATH=/usr/local/Cellar/berkeley-db/6.1.26/lib
+    BDB_INCLUDE_PATH=/usr/local/Cellar/berkeley-db4/4.8.30/include
+    BDB_LIB_PATH=/usr/local/Cellar/berkeley-db4/4.8.30/lib
 
     MINIUPNPC_INCLUDE_PATH=/usr/local/Cellar/miniupnpc/2.0/include
     MINIUPNPC_LIB_PATH=/usr/local/Cellar/miniupnpc/2.0/lib
@@ -275,9 +272,9 @@ HEADERS += \
     src/alert.h \
     src/allocators.h \
     src/keystore.h \
-    src/version.h \
     src/netbase.h \
     src/clientversion.h \
+	src/version.h \
     src/threadsafety.h \
     src/protocol.h \
     src/ui_interface.h \
@@ -353,7 +350,14 @@ HEADERS += \
     src/qt/scicon.h \
     src/qt/trafficgraphwidget.h \
     src/qt/messagemodel.h \
-    src/qt/gui.h \
+    src/qt/procgui.h \
+	src/qt/askpassphrasedialog.h \
+	src/qt/procbridge.h \
+	src/qt/optionsdialog.h \
+	src/crypter.h \
+    src/util.h \
+    src/wallet.h \
+    src/walletdb.h \
 	src/pubkey.h \
 	src/limitedmap.h \
 	src/support/cleanse.h \
@@ -364,11 +368,19 @@ HEADERS += \
     src/crypto/sha1.h \
     src/crypto/sha256.h \
     src/crypto/sha512.h \
-    src/qt/bridge.h
+	src/qt/sendcoinsentry.h \
+	src/qt/addressbookpage.h \
+	src/qt/procreleasechecker.h \
+	src/qt/multisig/multisigaddressentry.h \
+    src/qt/multisig/multisiginputentry.h \
+    src/qt/multisig/multisigdialog.h 
+	
+    
+    
 
 SOURCES += \
     src/alert.cpp \
-    src/version.cpp \
+    src/clientversion.cpp \
     src/chainparams.cpp \
     src/sync.cpp \
     src/smessage.cpp \
@@ -438,8 +450,15 @@ SOURCES += \
     src/qt/scicon.cpp \
     src/qt/trafficgraphwidget.cpp \
     src/qt/messagemodel.cpp \
-    src/qt/gui.cpp \
+    src/qt/procgui.cpp \
     src/qt/procurrency.cpp \
+	src/qt/askpassphrasedialog.cpp \
+	src/qt/procbridge.cpp \
+	src/qt/optionsdialog.cpp \
+    src/crypter.cpp \
+    src/rpcwallet.cpp \
+    src/util.cpp \
+    src/wallet.cpp \
 	src/pubkey.cpp \
 	src/allocators.cpp \
     src/base58.cpp \
@@ -450,57 +469,33 @@ SOURCES += \
     src/crypto/sha1.cpp \
     src/crypto/sha256.cpp \
     src/crypto/sha512.cpp \
-    src/qt/bridge.cpp
+	src/qt/sendcoinsentry.cpp \
+	src/qt/addressbookpage.cpp \
+	src/qt/procreleasechecker.cpp \
+	src/qt/multisig/multisigaddressentry.cpp \
+    src/qt/multisig/multisiginputentry.cpp \
+    src/qt/multisig/multisigdialog.cpp 
+	
 
 FORMS += \
     src/qt/forms/coincontroldialog.ui \
     src/qt/forms/aboutdialog.ui \
+	src/qt/forms/optionsdialog.ui \
     src/qt/forms/editaddressdialog.ui \
     src/qt/forms/transactiondescdialog.ui \
-    src/qt/forms/rpcconsole.ui
-
-otp_enabled {
-    message(Building with OTP support)
-    DEFINES += OTP_ENABLED
-    HEADERS += \
-        src/qt/askpassphrasedialog_otp.h \
-        src/util_otp.h \
-        src/wallet_otp.h \
-        src/walletdb_otp.h \
-        src/crypter_otp.h
-    SOURCES += \
-        src/qt/askpassphrasedialog_otp.cpp \
-        src/rpcwallet_otp.cpp \
-        src/util_otp.cpp \
-        src/wallet_otp.cpp \
-        src/crypter_otp.cpp
-    FORMS += \
-        src/qt/forms/askpassphrasedialog_otp.ui
-} else {
-    message(NOT Building with OTP support)
-    HEADERS += \
-        src/qt/askpassphrasedialog.h \
-        src/crypter.h \
-        src/util.h \
-        src/wallet.h \
-        src/walletdb.h
-    SOURCES += \
-        src/qt/askpassphrasedialog.cpp \
-        src/crypter.cpp \
-        src/rpcwallet.cpp \
-        src/util.cpp \
-        src/wallet.cpp
-    FORMS += \
-        src/qt/forms/askpassphrasedialog.ui
-} #otp_enabled
-
-trading_enabled {
-    DEFINES += TRADING_BITTREX
-
-    HEADERS += src/qt/tradingdialog_bittrex.h
-    SOURCES += src/qt/tradingdialog_bittrex.cpp
-    FORMS += src/qt/forms/tradingdialog_bittrex.ui
-} #trading_enabled
+    src/qt/forms/rpcconsole.ui \
+	src/qt/forms/askpassphrasedialog.ui \
+	src/qt/forms/addressbookpage.ui \
+	src/qt/forms/multisigaddressentry.ui \
+    src/qt/forms/multisiginputentry.ui \
+	src/qt/forms/sendcoinsentry.ui \
+    src/qt/forms/multisigdialog.ui 
+	
+contains(USE_QRCODE, 1) {
+HEADERS += src/qt/qrcodedialog.h
+SOURCES += src/qt/qrcodedialog.cpp
+FORMS += src/qt/forms/qrcodedialog.ui
+}
 
 CODECFORTR = UTF-8
 
@@ -536,15 +531,15 @@ isEmpty(BOOST_THREAD_LIB_SUFFIX) {
 }
 
 isEmpty(BDB_LIB_PATH) {
-    macx:BDB_LIB_PATH = /opt/local/lib/db48
+    macx:BDB_LIB_PATH = /usr/local/Cellar/berkeley-db4/4.8.30/lib
 }
 
 isEmpty(BDB_LIB_SUFFIX) {
-#    macx:BDB_LIB_SUFFIX = -4.8
+    macx:BDB_LIB_SUFFIX = -4.8
 }
 
 isEmpty(BDB_INCLUDE_PATH) {
-    macx:BDB_INCLUDE_PATH = /opt/local/include/db48
+    macx:BDB_INCLUDE_PATH = /usr/local/Cellar/berkeley-db4/4.8.30/include
 }
 
 isEmpty(BOOST_LIB_PATH) {

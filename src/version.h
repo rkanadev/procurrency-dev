@@ -1,8 +1,9 @@
 // Copyright (c) 2012 The Bitcoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
-#ifndef BITCOIN_VERSION_H
-#define BITCOIN_VERSION_H
+
+#ifndef PROCURRENCY_VERSION_H
+#define PROCURRENCY_VERSION_H
 
 #include "clientversion.h"
 #include <string>
@@ -30,13 +31,13 @@ static const int DATABASE_VERSION = 79700;
 // network protocol versioning
 //
 
-static const int PROTOCOL_VERSION = 75535;
+static const int PROTOCOL_VERSION = 75539;
 
 // intial proto version, to be increased after version/verack negotiation
 static const int INIT_PROTO_VERSION = 75500; // Bitcoin Init 209
 
 // disconnect from peers older than this proto version
-static const int MIN_PEER_PROTO_VERSION = 75532;
+static const int MIN_PEER_PROTO_VERSION = 75537;
 
 // nTime field added to CAddress, starting with this version;
 // if possible, avoid requesting addresses nodes older than this
@@ -58,4 +59,4 @@ static const int BIP0031_VERSION = 70000;
 // "mempool" command, enhanced "getdata" behavior starts with this version:
 static const int MEMPOOL_GD_VERSION = 60002;
 
-#endif
+#endif //PROCURRENCY_VERSION_H

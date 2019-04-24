@@ -4,7 +4,7 @@
     <message>
         <location filename="../forms/aboutdialog.ui" line="+14"/>
         <source>About ProCurrency</source>
-        <translation>Tietoa ShadowCoinista</translation>
+        <translation>Tietoa ProCurrencyista</translation>
     </message>
     <message>
         <location line="+39"/>
@@ -309,9 +309,9 @@ Tämä tuote sisältää OpenSSL-projektin kehittämää ohjelmistoa OpenSSL-ty�
     </message>
 </context>
 <context>
-    <name>BitcoinGUI</name>
+    <name>ProcGUI</name>
     <message>
-        <location filename="../bitcoingui.cpp" line="+280"/>
+        <location filename="../procgui.cpp" line="+280"/>
         <source>Sign &amp;message...</source>
         <translation>Allekirjoita &amp;viesti...</translation>
     </message>
@@ -378,7 +378,7 @@ Tämä tuote sisältää OpenSSL-projektin kehittämää ohjelmistoa OpenSSL-ty�
     <message>
         <location line="+4"/>
         <source>Show information about ProCurrency</source>
-        <translation>Näytä tietoja ShadowCoinista</translation>
+        <translation>Näytä tietoja ProCurrencyista</translation>
     </message>
     <message>
         <location line="+2"/>
@@ -433,7 +433,7 @@ Tämä tuote sisältää OpenSSL-projektin kehittämää ohjelmistoa OpenSSL-ty�
     <message>
         <location line="+45"/>
         <source>Modify configuration options for ProCurrency</source>
-        <translation>Mukauta ShadowCoinin konfigurointiasetuksia</translation>
+        <translation>Mukauta ProCurrencyin konfigurointiasetuksia</translation>
     </message>
     <message>
         <location line="+18"/>
@@ -483,7 +483,7 @@ Tämä tuote sisältää OpenSSL-projektin kehittämää ohjelmistoa OpenSSL-ty�
     <message>
         <location line="+178"/>
         <source>&amp;About ProCurrency</source>
-        <translation>&amp;Tietoa ShadowCoinista</translation>
+        <translation>&amp;Tietoa ProCurrencyista</translation>
     </message>
     <message>
         <location line="+9"/>
@@ -1552,7 +1552,7 @@ Tämä tarkoittaa, että ainakin %2 rahansiirtopalkkio tarvitaan.</translation>
     <message>
         <location line="+7"/>
         <source>Show the ProCurrency-Qt help message to get a list with possible ProCurrency command-line options.</source>
-        <translation>Näytä ProCurrency-Qt:n avustusohje saadaksesi listan käytettävistä ShadowCoinin komentokehotteen määritteistä.</translation>
+        <translation>Näytä ProCurrency-Qt:n avustusohje saadaksesi listan käytettävistä ProCurrencyin komentokehotteen määritteistä.</translation>
     </message>
     <message>
         <location line="+3"/>
@@ -1577,7 +1577,7 @@ Tämä tarkoittaa, että ainakin %2 rahansiirtopalkkio tarvitaan.</translation>
     <message>
         <location line="+25"/>
         <source>ProCurrency Core</source>
-        <translation>ShadowCoinin ydin</translation>
+        <translation>ProCurrencyin ydin</translation>
     </message>
     <message>
         <location line="+279"/>
@@ -1597,7 +1597,7 @@ Tämä tarkoittaa, että ainakin %2 rahansiirtopalkkio tarvitaan.</translation>
     <message>
         <location filename="../rpcconsole.cpp" line="-33"/>
         <source>Welcome to the ProCurrency RPC console.</source>
-        <translation>Tervetuloa ShadowCoinin RPC-konsoliin.</translation>
+        <translation>Tervetuloa ProCurrencyin RPC-konsoliin.</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -1755,8 +1755,8 @@ Tämä tarkoittaa, että ainakin %2 rahansiirtopalkkio tarvitaan.</translation>
     </message>
     <message>
         <location filename="../sendcoinsdialog.cpp" line="-173"/>
-        <source>Enter a ProCurrency address (e.g. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</source>
-        <translation>Syötä ProCurrency-osoite (esim. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</translation>
+        <source>Enter a ProCurrency address (e.g. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</source>
+        <translation>Syötä ProCurrency-osoite (esim. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</translation>
     </message>
     <message>
         <location line="+15"/>
@@ -1899,8 +1899,8 @@ Tämä tarkoittaa, että ainakin %2 rahansiirtopalkkio tarvitaan.</translation>
     </message>
     <message>
         <location line="+18"/>
-        <source>The address to send the payment to  (e.g. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</source>
-        <translation>Osoite, johon maksu lähetetään (esim. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</translation>
+        <source>The address to send the payment to  (e.g. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</source>
+        <translation>Osoite, johon maksu lähetetään (esim. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</translation>
     </message>
     <message>
         <location line="+10"/>
@@ -1929,8 +1929,8 @@ Tämä tarkoittaa, että ainakin %2 rahansiirtopalkkio tarvitaan.</translation>
     </message>
     <message>
         <location filename="../sendcoinsentry.cpp" line="+1"/>
-        <source>Enter a ProCurrency address (e.g. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</source>
-        <translation>Syötä ProCurrency-osoite (esim. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</translation>
+        <source>Enter a ProCurrency address (e.g. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</source>
+        <translation>Syötä ProCurrency-osoite (esim. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</translation>
     </message>
 </context>
 <context>
@@ -1953,8 +1953,8 @@ Tämä tarkoittaa, että ainakin %2 rahansiirtopalkkio tarvitaan.</translation>
     </message>
     <message>
         <location line="+18"/>
-        <source>The address to sign the message with (e.g. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</source>
-        <translation>Osoite, jolle viesti kirjataan (esim. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</translation>
+        <source>The address to sign the message with (e.g. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</source>
+        <translation>Osoite, jolle viesti kirjataan (esim. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</translation>
     </message>
     <message>
         <location line="+10"/>
@@ -2017,8 +2017,8 @@ Tämä tarkoittaa, että ainakin %2 rahansiirtopalkkio tarvitaan.</translation>
     </message>
     <message>
         <location line="+21"/>
-        <source>The address the message was signed with (e.g. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</source>
-        <translation>Osoite, jolla viesti on allekirjoitettu (esim. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC) </translation>
+        <source>The address the message was signed with (e.g. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</source>
+        <translation>Osoite, jolla viesti on allekirjoitettu (esim. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC) </translation>
     </message>
     <message>
         <location line="+40"/>
@@ -2033,8 +2033,8 @@ Tämä tarkoittaa, että ainakin %2 rahansiirtopalkkio tarvitaan.</translation>
     <message>
         <location filename="../signverifymessagedialog.cpp" line="+27"/>
         <location line="+3"/>
-        <source>Enter a ProCurrency address (e.g. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</source>
-        <translation>Syötä ProCurrency-osoite (esim. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</translation>
+        <source>Enter a ProCurrency address (e.g. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</source>
+        <translation>Syötä ProCurrency-osoite (esim. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</translation>
     </message>
     <message>
         <location line="-2"/>
@@ -2615,7 +2615,7 @@ Tämä tarkoittaa, että ainakin %2 rahansiirtopalkkio tarvitaan.</translation>
     <message>
         <location filename="../bitcoinstrings.cpp" line="+33"/>
         <source>ProCurrency version</source>
-        <translation>ShadowCoinin versio</translation>
+        <translation>ProCurrencyin versio</translation>
     </message>
     <message>
         <location line="+1"/>

@@ -314,9 +314,9 @@ Eric Young (eay@cryptsoft.com) y el software UPnP escrito por Thomas Bernard.</t
     </message>
 </context>
 <context>
-    <name>BitcoinGUI</name>
+    <name>ProcGUI</name>
     <message>
-        <location filename="../bitcoingui.cpp" line="+280"/>
+        <location filename="../procgui.cpp" line="+280"/>
         <source>Sign &amp;message...</source>
         <translation>Firmar &amp;mensaje...</translation>
     </message>
@@ -1761,8 +1761,8 @@ Esto significa que se requiere una cuota de al menos %2.</translation>
     </message>
     <message>
         <location filename="../sendcoinsdialog.cpp" line="-173"/>
-        <source>Enter a ProCurrency address (e.g. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</source>
-        <translation>Introduce una dirección ProCurrency (p.ej. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</translation>
+        <source>Enter a ProCurrency address (e.g. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</source>
+        <translation>Introduce una dirección ProCurrency (p.ej. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</translation>
     </message>
     <message>
         <location line="+15"/>
@@ -1905,8 +1905,8 @@ Esto significa que se requiere una cuota de al menos %2.</translation>
     </message>
     <message>
         <location line="+18"/>
-        <source>The address to send the payment to  (e.g. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</source>
-        <translation>La dirección a la que se quiere enviar el pago (p.ej. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</translation>
+        <source>The address to send the payment to  (e.g. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</source>
+        <translation>La dirección a la que se quiere enviar el pago (p.ej. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</translation>
     </message>
     <message>
         <location line="+10"/>
@@ -1935,8 +1935,8 @@ Esto significa que se requiere una cuota de al menos %2.</translation>
     </message>
     <message>
         <location filename="../sendcoinsentry.cpp" line="+1"/>
-        <source>Enter a ProCurrency address (e.g. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</source>
-        <translation>Introduce una dirección ProCurrency (p.ej. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</translation>
+        <source>Enter a ProCurrency address (e.g. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</source>
+        <translation>Introduce una dirección ProCurrency (p.ej. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</translation>
     </message>
 </context>
 <context>
@@ -1959,8 +1959,8 @@ Esto significa que se requiere una cuota de al menos %2.</translation>
     </message>
     <message>
         <location line="+18"/>
-        <source>The address to sign the message with (e.g. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</source>
-        <translation>La dirección a firmar con un mensaje (p.ej. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</translation>
+        <source>The address to sign the message with (e.g. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</source>
+        <translation>La dirección a firmar con un mensaje (p.ej. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</translation>
     </message>
     <message>
         <location line="+10"/>
@@ -2023,8 +2023,8 @@ Esto significa que se requiere una cuota de al menos %2.</translation>
     </message>
     <message>
         <location line="+21"/>
-        <source>The address the message was signed with (e.g. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</source>
-        <translation>La dirección firmada con un mensaje (p.ej. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</translation>
+        <source>The address the message was signed with (e.g. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</source>
+        <translation>La dirección firmada con un mensaje (p.ej. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</translation>
     </message>
     <message>
         <location line="+40"/>
@@ -2039,8 +2039,8 @@ Esto significa que se requiere una cuota de al menos %2.</translation>
     <message>
         <location filename="../signverifymessagedialog.cpp" line="+27"/>
         <location line="+3"/>
-        <source>Enter a ProCurrency address (e.g. PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</source>
-        <translation>Introduce una dirección ProCurrency (p.ej PSFDPgW4wuGSHDXAJ3qUbpGJnDBVX8KBBC)</translation>
+        <source>Enter a ProCurrency address (e.g. PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</source>
+        <translation>Introduce una dirección ProCurrency (p.ej PSF2P9W4PuGSHDXAJ3QUb6GJnDBVX8KLBC)</translation>
     </message>
     <message>
         <location line="-2"/>
